@@ -1,22 +1,18 @@
 const express = require('express');
-const path = require('path');
-const cors = require('cors');
-
 const app = express();
-const PORT = process.env.PORT || 3000;
+const path = require('path');
 
-// Middleware to enable CORS
-app.use(cors());
+const PORT = process.env.PORT || 3000; // Use port 3000 by default
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Route to serve the HTML file
+// Route for serving the HTML file
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Start the server
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+app.listen(PORT, '8.8.8.8', () => {
+  console.log(`Server is running on http://0.0.0.0:${PORT}`);
 });
