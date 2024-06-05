@@ -39,34 +39,37 @@ document.addEventListener('DOMContentLoaded', function () {
 
     dataForm.addEventListener('submit', function (e) {
         e.preventDefault();
-        const name = document.getElementById('name').value;
-        const description = document.getElementById('description').value;
-        const imageInput = document.getElementById('image');
-        const newImage = document.getElementById('newImage');
-        const file = imageInput.files[0];
-        const newFile = newImage.files[0];
-
+        const formData = new FormData(dataForm);
+        
         if (editIndex >= 0) {
             const savedData = JSON.parse(localStorage.getItem('data')) || [];
-            savedData[editIndex].name = name;
-            savedData[editIndex].description = description;
+            savedData[editIndex].name = formData.get('name');
+            savedData[editIndex].description = formData.get('description');
 
-            if (changeImageCheckbox.checked && newFile) {
-                uploadImage(newFile, function(imageUrl) {
-                    savedData[editIndex].imageUrl = imageUrl;
+            if (changeImageCheckbox.checked) {
+                const newFiles = formData.getAll('newImages[]');
+                if (newFiles.length > 0) {
+                    uploadImages(newFiles, function(imageUrls) {
+                        savedData[editIndex].imageUrls = imageUrls;
+                        updateData(savedData[editIndex], editIndex);
+                        formPopup.style.display = 'none';
+                        dataForm.reset();
+                    });
+                } else {
                     updateData(savedData[editIndex], editIndex);
                     formPopup.style.display = 'none';
                     dataForm.reset();
-                });
+                }
             } else {
                 updateData(savedData[editIndex], editIndex);
                 formPopup.style.display = 'none';
                 dataForm.reset();
             }
         } else {
-            if (file) {
-                uploadImage(file, function(imageUrl) {
-                    const data = { name, description, imageUrl };
+            const files = formData.getAll('images[]');
+            if (files.length > 0) {
+                uploadImages(files, function(imageUrls) {
+                    const data = { name: formData.get('name'), description: formData.get('description'), imageUrls };
                     saveData(data);
                     displayData(data, JSON.parse(localStorage.getItem('data')).length - 1);
                     formPopup.style.display = 'none';
@@ -90,36 +93,49 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         dropZone.style.backgroundColor = '#fff';
         const files = e.dataTransfer.files;
+        const imageFiles = [];
         for (let file of files) {
             if (file.type.startsWith('image/')) {
-                uploadImage(file, function(imageUrl) {
-                    const name = 'Dropped Image';
-                    const description = 'No description';
-                    const data = { name, description, imageUrl };
-                    saveData(data);
-                    displayData(data, JSON.parse(localStorage.getItem('data')).length - 1);
-                });
+                imageFiles.push(file);
             }
+        }
+        if (imageFiles.length > 0) {
+            uploadImages(imageFiles, function(imageUrls) {
+                const name = 'Dropped Image';
+                const description = 'No description';
+                const data = { name, description, imageUrls };
+                saveData(data);
+                displayData(data, JSON.parse(localStorage.getItem('data')).length - 1);
+            });
         }
     });
 
-    function uploadImage(file, callback) {
-        const reader = new FileReader();
-        reader.onload = function (event) {
-            const imageUrl = event.target.result;
-            callback(imageUrl);
-        };
-        reader.readAsDataURL(file);
+    function uploadImages(files, callback) {
+        const promises = Array.from(files).map(file => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    resolve(event.target.result);
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        Promise.all(promises).then(callback);
     }
 
     function displayData(data, index) {
         const dataItem = document.createElement('div');
         dataItem.className = 'data-item';
         dataItem.dataset.index = index;
+        let imagesHtml = '';
+        data.imageUrls.forEach(url => {
+            imagesHtml += `<img src="${url}" alt="${data.name}">`;
+        });
         dataItem.innerHTML = `
             <h3>${data.name}</h3>
             <p>${data.description}</p>
-            <img src="${data.imageUrl}" alt="${data.name}">
+            ${imagesHtml}
             <div class="actions">
                 <button onclick="editData(${index})">✏️</button>
                 <button onclick="deleteData(${index})">❌</button>
@@ -168,18 +184,18 @@ document.addEventListener('DOMContentLoaded', function () {
         loadSavedData();
     }
 
+    const searchBox = document.getElementById('searchBox');
     searchBox.addEventListener('input', function () {
-        const query = searchBox.value.trim().toLowerCase(); // Trim and convert query to lowercase
-        const dataItems = document.querySelectorAll('.data-item');
-        dataItems.forEach(item => {
-            const name = item.querySelector('h3').textContent.toLowerCase(); // Get lowercase text content
-            const description = item.querySelector('p').textContent.toLowerCase(); // Get lowercase text content
-            if (name.includes(query) || description.includes(query)) { // Check if name or description contains query
+        const searchTerm = searchBox.value.toLowerCase();
+        const items = document.querySelectorAll('.data-item');
+        items.forEach(item => {
+            const name = item.querySelector('h3').textContent.toLowerCase();
+            const description = item.querySelector('p').textContent.toLowerCase();
+            if (name.includes(searchTerm) || description.includes(searchTerm)) {
                 item.style.display = 'block';
             } else {
                 item.style.display = 'none';
             }
         });
     });
-
 });
