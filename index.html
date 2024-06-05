@@ -42,5 +42,36 @@
     <div id="dataDisplay" class="data-display"></div>
 
     <script src="script.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Add event listener to all images for long press
+            const images = document.querySelectorAll('img');
+            images.forEach(img => {
+                img.addEventListener('touchstart', handleLongPress);
+            });
+        });
+
+        let longPressTimer;
+
+        function handleLongPress(event) {
+            event.preventDefault();
+            clearTimeout(longPressTimer);
+            longPressTimer = setTimeout(() => {
+                const imageUrl = event.target.src;
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(imageUrl)
+                        .then(() => {
+                            alert('Image URL copied to clipboard!');
+                        })
+                        .catch(err => {
+                            console.error('Failed to copy: ', err);
+                        });
+                } else {
+                    alert('Sorry, copying image URL is not supported on your device.');
+                }
+            }, 1000); // Adjust this value to control the duration of long press
+        }
+    </script>
 </body>
 </html>
