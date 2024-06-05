@@ -6,17 +6,14 @@ function compressImage(file, maxWidth, maxHeight, quality) {
             const img = new Image();
             img.src = event.target.result;
             img.onload = function() {
-                const canvas = document.createElement('canvas');
                 let width = img.width;
                 let height = img.height;
-                if (width > maxWidth) {
-                    height *= maxWidth / width;
-                    width = maxWidth;
+                if (width > maxWidth || height > maxHeight) {
+                    const scaleFactor = Math.min(maxWidth / width, maxHeight / height);
+                    width *= scaleFactor;
+                    height *= scaleFactor;
                 }
-                if (height > maxHeight) {
-                    width *= maxHeight / height;
-                    height = maxHeight;
-                }
+                const canvas = document.createElement('canvas');
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
