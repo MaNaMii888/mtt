@@ -52,14 +52,12 @@ document.addEventListener('DOMContentLoaded', function () {
             savedData[editIndex].description = description;
 
             if (changeImageCheckbox.checked && newFile) {
-                const reader = new FileReader();
-                reader.onload = function (event) {
-                    savedData[editIndex].imageUrl = event.target.result;
+                uploadImage(newFile, function(imageUrl) {
+                    savedData[editIndex].imageUrl = imageUrl;
                     updateData(savedData[editIndex], editIndex);
                     formPopup.style.display = 'none';
                     dataForm.reset();
-                };
-                reader.readAsDataURL(newFile);
+                });
             } else {
                 updateData(savedData[editIndex], editIndex);
                 formPopup.style.display = 'none';
@@ -67,16 +65,13 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         } else {
             if (file) {
-                const reader = new FileReader();
-                reader.onload = function (event) {
-                    const imageUrl = event.target.result;
+                uploadImage(file, function(imageUrl) {
                     const data = { name, description, imageUrl };
                     saveData(data);
                     displayData(data, JSON.parse(localStorage.getItem('data')).length - 1);
                     formPopup.style.display = 'none';
                     dataForm.reset();
-                };
-                reader.readAsDataURL(file);
+                });
             }
         }
     });
@@ -97,19 +92,25 @@ document.addEventListener('DOMContentLoaded', function () {
         const files = e.dataTransfer.files;
         for (let file of files) {
             if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function (event) {
-                    const imageUrl = event.target.result;
+                uploadImage(file, function(imageUrl) {
                     const name = 'Dropped Image';
                     const description = 'No description';
                     const data = { name, description, imageUrl };
                     saveData(data);
                     displayData(data, JSON.parse(localStorage.getItem('data')).length - 1);
-                };
-                reader.readAsDataURL(file);
+                });
             }
         }
     });
+
+    function uploadImage(file, callback) {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+            const imageUrl = event.target.result;
+            callback(imageUrl);
+        };
+        reader.readAsDataURL(file);
+    }
 
     function displayData(data, index) {
         const dataItem = document.createElement('div');
